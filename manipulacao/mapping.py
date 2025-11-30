@@ -1,0 +1,56 @@
+RPA1 = ['RECIFE', 'BOA VISTA', 'CABANGA',
+        'COELHOS', 'ILHA DO LEITE', "ILHA JOANA BEZERRA", 'PAISSANDU', 'SANTO AMARO', 'SANTO ANTONIO', 'SAO JOSE', 'SOLEDADE']
+RPA2 = ['AGUA FRIA', 'ALTO SANTA TEREZINHA','TORREAO',
+        'ARRUDA', 'BEBERIBE', 'BOMBA DO HEMETERIO', 'CAJUEIRO', 'CAMPINA DO BARRETO', 'CAMPO GRANDE', 'DOIS UNIDOS', 'ENCRUZILHADA', 'FUNDAO', 'HIPODROMO', 'LINHA DO TIRO', 'PEIXINHOS', 'PONTO DE PARADA', 'PORTO DA MADEIRA', 'ROSARINHO']
+RPA3 = ['AFLITOS', 'ALTO DO MANDU', 'ALTO JOSE DO PINHO', 'ALTO JOSE BONIFACIO',
+         'APIPUCOS', 'BREJO DA GUABIRABA', 'BREJO DE BEBERIBE','CASA AMARELA', 'CASA FORTE',
+        'CORREGO DO JENIPAPO', 'DERBY', 'DOIS IRMAOS', 'ESPINHEIRO', 'GRACAS', 'GUABIRABA', 'JAQUEIRA', 'MACAXEIRA', 'MANGABEIRA', 'MONTEIRO',
+        'MORRO DA CONCEICAO', 'NOVA DESCOBERTA', 'PARNAMIRIM', 'PASSARINHO', 'PAU-FERRO',  'POÇO DA PANELA', 'SANTANA',' SÍTIO DOS PINTOS', 'TAMARINEIRA',
+        'VASCO DA GAMA', 'CAPUNGA']
+RPA4 = ['CAXANGA','CIDADE UNIVERSITARIA', 'BRASILIT',
+        'CORDEIRO','ENGENHO DO MEIO', 'ILHA DO RETIRO', 'IPUTINGA', 'MADALENA', 'PRADO', 'TORROES', 'TORRE', 'VARZEA', 'ZUMBI',  'UR-7 VARZEA',]
+RPA5 = ['AFOGADOS', 'AREIAS', 'BARRO','TEJIPIÓ',
+        'BONGI', 'CAÇOTE', 'COQUEIRAL', 'CURADO', 'JARDIM UCHÔA','ESTÂNCIA','JARDIM SÃO PAULO', 'JIQUIÁ', 'MANGUEIRA', 'MUSTARDINHA', 'SAN MARTIN', 'SANCHO', 'TEJIPIO', 'TOTÓ']
+RPA6 = ['BOA VIAGEM', 'BRASILIA TEIMOSA', 'IBURA DE BAIXO', 'JORDÃO', 'TRES CARNEIROS',
+        "COHAB", 'IBURA', "IMBIRIBEIRA", 'IPSEP', 'JORDAO ALTO', 'JORDAO BAIXO', "PINA", 'UR 1 - IBURA', 'MONTE VERDE - IBURA', 'LAGOA ENCANTADA', 'UR-4', 'UR 3 - IBURA', 'UR 2 - IBURA ALTO',]
+
+
+vencedores = [
+'Aderaldo Pinto',
+'Agora é Rubem',
+'Alcides Teixeira Neto',
+'Alef Collins',
+'Professora Ana Lúcia',
+'Carlos Muniz',
+'Chico Kiko',
+'Cida Pedrosa',
+'Davi Muniz',
+'Eduardo Mota',
+'Eduardo Moura',
+'Eriberto Rafael',
+'Fabiano Ferraz',
+'Felipe Alecrim',
+'Felipe Francismar',
+'Flávia de Nadegi',
+'Fred Ferreira',
+'Gilberto Alves',
+'Gilson Machado Filho',
+'Hélio Guabiraba',
+'Júnior Bocão',
+'Jô Cavalcanti',
+'Zé Neto',
+'Júnior de Cleto',
+'Kari Santos',
+'Liana Cirne',
+'Luiz Eustáquio',
+'Natália de Menudo',
+'Osmar Ricardo',
+'Paulo Muniz',
+'Rinaldo Júnior',
+'Rodrigo Coutinho',
+'Romerinho Jatobá',
+'Samuel Salazar',
+'Tadeu Calheiros',
+'Thiago Medina',
+'Wilton Brito',
+]
