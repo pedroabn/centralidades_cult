@@ -1,4 +1,4 @@
-,ano,data_eleicao,id_municipio,nome_urna,sigla_partido,idade,genero,raca
+streamlit_vereadores/dados/locais.csv,ano,data_eleicao,id_municipio,nome_urna,sigla_partido,idade,genero,raca
 0,2024,2024-10-06,2611606,Abel Filho,MOBILIZA,55,masculino,parda
 1,2024,2024-10-06,2611606,Adalice De Adilson Bito,PRD,30,feminino,preta
 2,2024,2024-10-06,2611606,Adeilda Barros,REDE,65,feminino,parda

@@ -14,106 +14,89 @@ from pathlib import Path
 # Votos por candidato no local;
 # Perfil de votantes;
 #%% Dados retirados pela API do Base dos Dados as bd
-billing_id = 'dados-eleicao-470222'
-candquery = """
-    SELECT
-        ano,
-        data_eleicao,
-        id_municipio,
-        nome_urna,
-        sigla_partido,
-        idade,
-        genero,
-        raca,
-    FROM `basedosdados.br_tse_eleicoes.candidatos`
-    WHERE ano = 2024 AND id_municipio = '2611606' and cargo = 'vereador'
-    ORDER BY nome_urna
-"""
-cadidatos = bd.read_sql(query = candquery, billing_project_id = billing_id)
-candidatos = pd.DataFrame(cadidatos)
-cadidatos.to_csv('candidatos.csv')
+# billing_id = 'dados-eleicao-470222'
+# candquery = """
+#     SELECT
+#         ano,
+#         data_eleicao,
+#         id_municipio,
+#         nome_urna,
+#         sigla_partido,
+#         idade,
+#         genero,
+#         raca,
+#     FROM `basedosdados.br_tse_eleicoes.candidatos`
+#     WHERE ano = 2024 AND id_municipio = '2611606' and cargo = 'vereador'
+#     ORDER BY nome_urna
+# """
+# cadidatos = bd.read_sql(query = candquery, billing_project_id = billing_id)
+# candidatos = pd.DataFrame(cadidatos)
+# cadidatos.to_csv('candidatos.csv')
 
-vtsquery = """
-    SELECT 
-    c.nome_urna as Nome_candidato,
-    r.secao as Secao,
-    r.zona as Zona,
-    SUM(r.votos) as Votos_recebidos
-    FROM
-    basedosdados.br_tse_eleicoes.resultados_candidato_secao as r
-    LEFT JOIN
-    basedosdados.br_tse_eleicoes.candidatos as c
-    ON (CAST(r.sequencial_candidato as string) = cast(c.sequencial as string) 
-        AND CAST(r.numero_candidato as string) = CAST(c.numero as string))
-    WHERE
-    r.ano = 2024 AND r.id_municipio = "2611606" and r.cargo = "vereador"
-    GROUP BY
-    Nome_candidato,
-    Secao,
-    Zona;
-"""
-votosecao = bd.read_sql(query = vtsquery, billing_project_id = billing_id)
-votosecao.to_csv('votosecao.csv')
+# vtsquery = """
+#     SELECT 
+#     c.nome_urna as Nome_candidato,
+#     r.secao as Secao,
+#     r.zona as Zona,
+#     SUM(r.votos) as Votos_recebidos
+#     FROM
+#     basedosdados.br_tse_eleicoes.resultados_candidato_secao as r
+#     LEFT JOIN
+#     basedosdados.br_tse_eleicoes.candidatos as c
+#     ON (CAST(r.sequencial_candidato as string) = cast(c.sequencial as string) 
+#         AND CAST(r.numero_candidato as string) = CAST(c.numero as string))
+#     WHERE
+#     r.ano = 2024 AND r.id_municipio = "2611606" and r.cargo = "vereador"
+#     GROUP BY
+#     Nome_candidato,
+#     Secao,
+#     Zona;
+# """
+# votosecao = bd.read_sql(query = vtsquery, billing_project_id = billing_id)
+# votosecao.to_csv('votosecao.csv')
 
-ptquery =     """
-    with Votos_Partidos as
-    (SELECT 
-    zona,
-    secao,
-    sigla_partido,
-    votos_nominais,
-    votos_legenda,
-    (votos_nominais + votos_legenda) as votos_totais
-    FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
-    WHERE ano = 2024 and id_municipio = "2611606")
-    SELECT * FROM Votos_Partidos
-    """
-votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
-votopartido.to_csv('votopartido.csv')    
+# ptquery =     """
+#     with Votos_Partidos as
+#     (SELECT 
+#     zona,
+#     secao,
+#     sigla_partido,
+#     votos_nominais,
+#     votos_legenda,
+#     (votos_nominais + votos_legenda) as votos_totais
+#     FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
+#     WHERE ano = 2024 and id_municipio = "2611606")
+#     SELECT * FROM Votos_Partidos
+#     """
+# votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
+# votopartido.to_csv('votopartido.csv')    
 #%% Localizzaçao
 
 DATA_DIR = Path("dados")
-def load_geo(path: str | None = None) -> pd.DataFrame:
+
+def load_locais(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "locais.csv"
-    return pd.read_csv(path)
-
-def load_votos(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "votosecao.csv"
-    df = pd.read_csv(path)
-    return df
-
-def load_candcru(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "candidatos.csv"
-    df = pd.read_csv(path)
-    return df
-
-@st.cache_data
-def load_vt_edit(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "vt_edit.csv"
     df = pd.read_csv(path)
     return df
 
 @st.cache_data
 def load_cand(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "cand_edit.csv"
+        path = DATA_DIR / "candidatos.csv"
     df = pd.read_csv(path)
     return df
 
 @st.cache_data
-def load_map(path: str | None = None) -> pd.DataFrame:
+def load_vtsec(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "voto_pl.csv"
+        path = DATA_DIR / "votosecao.csv"
     df = pd.read_csv(path)
     return df
 
 @st.cache_data
 def load_partidos_vt(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "partidos_vt.csv"
+        path = DATA_DIR / "votopartido.csv"
     df = pd.read_csv(path)
     return df
