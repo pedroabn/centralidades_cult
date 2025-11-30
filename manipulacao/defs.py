@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import re
 from manipulacao.mapping import vencedores, RPA1,RPA2,RPA3,RPA4,RPA5,RPA6
-from core.carregar import load_geo,load_votos, load_candcru
+from core.carregar import load_vtsec,load_cand, load_partidos_vt, load_locais
 #%%
 def get_ze(valor):
     """Explode string de seções em lista de inteiros"""
@@ -65,30 +65,40 @@ def resultado(df):
                 default="Não foi eleito")
     return df
 
+def limpar_col(df):
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.lower()
+        .str.replace(' ', '_')
+        .str.replace('-', '_')
+    )
+    return df
 # %%
-candidatocru = load_candcru()
-zonascru = load_geo()
-votoscru = load_votos()
+candidatocru = load_cand()
+zonascru = load_locais()
+votoscru = load_vtsec()
 zonas = zona_sec(zonascru)
 zonas = load_cluster(zonas)
-local_voto = votoscru.merge(zonas, on=['secao','zona'], how='left')
-local_voto.to_csv('dados/vt_edit.csv')
-votostotais = local_voto.groupby(['nome_candidato']).agg(
+#%%
+votos_local = votoscru.merge(zonas, on=['secao','zona'], how='left')
+# votos_local vai ser o nome do import com os dados de votação de cada candidato, em cada local
+#%%
+votostotais = votos_local.groupby(['nome_candidato']).agg(
                         votos = ('votos_recebidos','sum')
                                  ).reset_index()
 candidato = resultado(candidatocru)
 candidato = candidato.merge(votostotais, right_on='nome_candidato',left_on='nome_urna', how='left')
-
+# Candidato vai ser o nome do import com os dados de perfil de cada candidato
 #%%
-voto_por_loc = (local_voto.merge(candidato, on='nome_candidato', how='left')
-                    .groupby(['local','nome_candidato','EBAIRRNOMEOF','RPA',
-                    'latitude','longitude','sigla_partido']).agg(
-                    votos = ('votos_recebidos','sum')).reset_index())
-
-#%%
-partidos = pd.read_csv('dados\partidos.csv')
-partidos = (partidos.merge(zonas, on=['secao','zona'], how='left')
+df = load_partidos_vt()
+partidos = (df.merge(zonas, on=['secao','zona'], how='left')
             .groupby(['local','sigla_partido','EBAIRRNOMEOF','latitude','longitude','RPA'])
-            .apply(lambda g: (g['votos_legenda'] + g['votos_nominais']).sum())
-            .reset_index(name='votos'))
+            .agg(
+                votos_nominais = ('votos_nominais','sum'),
+                votos_legenda = ('votos_legenda','sum'),
+                votos_partido = ('votos_totais','sum')
+            )
+            .reset_index())
+# Partidos vai ser o nome do import com os dados de votação de cada partido, em cada local
 # %%

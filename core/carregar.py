@@ -4,6 +4,9 @@ import pandas as pd
 import streamlit as st
 from pathlib import Path
 #%%
+
+# EU QUERO PEGAR OS DADOS SEM PRECISAR TER QUE FAZER A LEITURA DE DOCUMENTO LOCAL, DIRETO DA NUVEM
+
 # As bases de dados serão baseadas em local. A ideia, é trazer todos os dados de votação e buscar forma de criar relaões de impacto do
 # partido/candidato com o local. Importante valorizar os dados que buscam evidenciar a participação do partido e dos candidatos, além de
 # entender como é o perfil desses eleitores, fazendo no futuro, comparação entre correlação de variáveis com o partido com mais votos.
@@ -69,6 +72,20 @@ from pathlib import Path
 #     """
 # votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
 # votopartido.to_csv('votopartido.csv')    
+
+locquery =   """
+        SELECT zona,
+        secao,
+        comparecimento,
+        votos_nominais,
+        votos_brancos,
+        votos_nulos,
+        votos_legenda
+        FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao` 
+        WHERE ano = 2024 and id_municipio = "2611606"
+        """
+# infovotacao = bd.read_sql(query = locquery, billing_project_id = billing_id)
+# infovotacao.to_csv('infovotacao.csv')  
 #%% Localizzaçao
 
 DATA_DIR = Path("dados")
