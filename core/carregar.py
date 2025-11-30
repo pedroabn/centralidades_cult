@@ -2,7 +2,6 @@
 import basedosdados as bd
 import pandas as pd
 import streamlit as st
-import numpy as np
 from pathlib import Path
 #%%
 # As bases de dados serão baseadas em local. A ideia, é trazer todos os dados de votação e buscar forma de criar relaões de impacto do
@@ -12,7 +11,7 @@ from pathlib import Path
 # Votos geral por local;
 # Votos por partido no local;
 # Votos por candidato no local;
-# Perfil de votantes;
+# Perfil de votantes (Pegar dados dos bairros);
 #%% Dados retirados pela API do Base dos Dados as bd
 # billing_id = 'dados-eleicao-470222'
 # candquery = """
@@ -77,6 +76,12 @@ DATA_DIR = Path("dados")
 def load_locais(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "locais.csv"
+    df = pd.read_csv(path)
+    return df
+
+def load_pb(path: str | None = None) -> pd.DataFrame:
+    if path is None:
+        path = DATA_DIR/'infopb.csv'
     df = pd.read_csv(path)
     return df
 
