@@ -3,9 +3,17 @@ import numpy as np
 import pandas as pd
 import re
 import streamlit as st
-from manipulacao.mapping import vencedores, RPA1,RPA2,RPA3,RPA4,RPA5,RPA6
+import unicodedata
+from manipulacao.mapping import vencedores, RPA1,RPA2,RPA3,RPA4,RPA5,RPA6, SCHEMA_TIPOS
 from core.carregar import load_cand, load_partido,load_vtsec,load_infoloc, load_geo, load_infopb
 #%%
+def limpar_acento(txt):
+    if pd.isnull(txt):
+        return txt
+    txt = ''.join(ch for ch in unicodedata.normalize('NFKD', txt) 
+        if not unicodedata.combining(ch))
+    return txt
+
 def get_ze(valor):
     """Explode string de seções em lista de inteiros"""
     if pd.isna(valor): return []
@@ -75,6 +83,22 @@ def limpar_col(df):
         .str.replace('-', '_')
     )
     return df
+
+def padronizar_tipos(df, colunas_especificas=None):
+    df_copy = df.copy()   
+    # Se não especificar colunas, padroniza todas que existem no schema
+    colunas_para_padronizar = colunas_especificas or list(SCHEMA_TIPOS.keys())
+    for col in colunas_para_padronizar:
+        if col in df_copy.columns and col in SCHEMA_TIPOS:
+            tipo_alvo = SCHEMA_TIPOS[col]               
+            if tipo_alvo == 'int64':
+                df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0).astype('int64')
+            elif tipo_alvo == 'float64':
+                df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce').fillna(0.0).astype('float64')
+            elif tipo_alvo == 'str':
+                df_copy[col] = df_copy[col].astype(str).str.strip()
+                df_copy[col] = df_copy[col].replace(['nan', 'None', ''], pd.NA).fillna('')                     
+    return df_copy
 # %%
 def loc_zonas():
     zonascru = load_geo()
@@ -101,9 +125,20 @@ def perfil_cand():
     return df
 # Candidato vai ser o nome do import com os dados de perfil de cada candidato
 
+st.cache_data(ttl=86400)
+def infoloc():
+    dfz = loc_zonas()    
+    infolocru = load_infoloc()
+    infoloc = padronizar_tipos(infolocru)
+    df = infoloc.merge(dfz, on=['secao','zona'], how='left')
+    return df
+
+@st.cache_data(ttl=86400)
 def db_partido():
-    dfz = loc_zonas()
-    ptd = load_partido()
+    dfz = infoloc()
+    ptd = load_partido()   
+    dfz = padronizar_tipos(dfz, ['secao', 'zona'])
+    ptd = padronizar_tipos(ptd, ['secao', 'zona', 'votos_nominais', 'votos_legenda', 'votos_totais'])
     df = (ptd.merge(dfz, on=['secao','zona'], how='left')
                 .groupby(['local','sigla_partido','EBAIRRNOMEOF','latitude','longitude','RPA'])
                 .agg(
@@ -112,16 +147,13 @@ def db_partido():
                     votos_partido = ('votos_totais','sum')
                 )
                 .reset_index())
-    return df
-# Partidos vai ser o nome do import com os dados de votação de cada partido, em cada local
-def infoloc():
-    dfz = loc_zonas()    
-    infolocru = load_infoloc()
-    df = infolocru.merge(dfz, on=[])
-    return df
+    
+    return padronizar_tipos(df)
 
+st.cache_data(ttl=86400)
 def info_pbvoto():
     infopb = load_infopb()
     ptd = db_partido()
     df = ptd.merge(infopb, on='EBAIRRNOMEOF', how='left')
     return df
+# %%

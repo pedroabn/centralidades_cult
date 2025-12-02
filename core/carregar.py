@@ -4,9 +4,6 @@ import pandas as pd
 import streamlit as st
 from pathlib import Path
 #%%
-
-# EU QUERO PEGAR OS DADOS SEM PRECISAR TER QUE FAZER A LEITURA DE DOCUMENTO LOCAL, DIRETO DA NUVEM
-
 # As bases de dados serão baseadas em local. A ideia, é trazer todos os dados de votação e buscar forma de criar relaões de impacto do
 # partido/candidato com o local. Importante valorizar os dados que buscam evidenciar a participação do partido e dos candidatos, além de
 # entender como é o perfil desses eleitores, fazendo no futuro, comparação entre correlação de variáveis com o partido com mais votos.
@@ -15,6 +12,9 @@ from pathlib import Path
 # Votos por partido no local;
 # Votos por candidato no local;
 # Perfil de votantes (Pegar dados dos bairros);
+
+
+# Colocar cada coluna com um nome diferente
 #%% Dados retirados pela API do Base dos Dados as bd
 billing_id = 'dados-eleicao-470222'
 
@@ -63,19 +63,20 @@ def load_vtsec():
     df = pd.DataFrame(votosecao)
     return df
 
-@st.cache_data(ttl=86400)
 def load_infoloc():        
     locquery =   """
-            SELECT zona,
-            secao,
-            comparecimento,
-            votos_nominais,
-            votos_brancos,
-            votos_nulos,
-            votos_legenda
-            FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao` 
-            WHERE ano = 2024 and id_municipio = "2611606"
-            """
+SELECT
+zona,
+secao,
+comparecimento,
+votos_nominais,
+votos_brancos,
+votos_nulos,
+votos_legenda,
+(votos_nominais + votos_legenda) as votos_validos
+FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao`
+WHERE ano = 2024 and id_municipio = "2611606" and cargo = "vereador"
+"""
     infovotacao = bd.read_sql(query = locquery, billing_project_id = billing_id)
     df = pd.DataFrame(infovotacao)
     return df
@@ -100,6 +101,7 @@ def load_partido():
     return df
 
 DATA_DIR = Path("dados")
+
 @st.cache_data
 def load_geo(path: str | None = None) -> pd.DataFrame:
     if path is None:
@@ -110,3 +112,4 @@ def load_infopb(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "info_pb.csv"
     return pd.read_csv(path)
+# %%
