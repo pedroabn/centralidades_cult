@@ -16,100 +16,117 @@ from pathlib import Path
 
 # Colocar cada coluna com um nome diferente
 #%% Dados retirados pela API do Base dos Dados as bd
-billing_id = 'dados-eleicao-470222'
+# billing_id = 'dados-eleicao-470222'
 
-@st.cache_data(ttl=86400)
-def load_cand():
-    candquery = """
-        SELECT
-            ano,
-            data_eleicao,
-            id_municipio,
-            nome_urna,
-            sigla_partido,
-            idade,
-            genero,
-            raca,
-        FROM `basedosdados.br_tse_eleicoes.candidatos`
-        WHERE ano = 2024 AND id_municipio = '2611606' and cargo = 'vereador'
-        ORDER BY nome_urna
-    """
-    cadidatos = bd.read_sql(query = candquery, billing_project_id = billing_id)
-    df = pd.DataFrame(cadidatos)
-    return df
+# @st.cache_data(ttl=86400)
+# def load_cand():
+#     candquery = """
+#         SELECT
+#             nome_urna,
+#             sigla_partido,
+#             idade,
+#             genero,
+#             raca,
+#         FROM `basedosdados.br_tse_eleicoes.candidatos`
+#         WHERE ano = 2024 AND id_municipio = '2611606' and cargo = 'vereador'
+#         ORDER BY nome_urna
+#     """
+#     cadidatos = bd.read_sql(query = candquery, billing_project_id = billing_id)
+#     df = pd.DataFrame(cadidatos)
+#     return df
 
-@st.cache_data(ttl=86400)
-def load_vtsec():        
-    vtsquery = """
-        SELECT 
-        c.nome_urna as Nome_candidato,
-        r.secao as Secao,
-        r.zona as Zona,
-        SUM(r.votos) as Votos_recebidos
-        FROM
-        basedosdados.br_tse_eleicoes.resultados_candidato_secao as r
-        LEFT JOIN
-        basedosdados.br_tse_eleicoes.candidatos as c
-        ON (CAST(r.sequencial_candidato as string) = cast(c.sequencial as string) 
-            AND CAST(r.numero_candidato as string) = CAST(c.numero as string))
-        WHERE
-        r.ano = 2024 AND r.id_municipio = "2611606" and r.cargo = "vereador"
-        GROUP BY
-        Nome_candidato,
-        Secao,
-        Zona;
-    """
-    votosecao = bd.read_sql(query = vtsquery, billing_project_id = billing_id)
-    df = pd.DataFrame(votosecao)
-    return df
+# @st.cache_data(ttl=86400)
+# def load_vtsec():        
+#     vtsquery = """
+#         SELECT 
+#         c.nome_urna as Nome_candidato,
+#         r.secao as Secao,
+#         r.zona as Zona,
+#         SUM(r.votos) as Votos_recebidos
+#         FROM
+#         basedosdados.br_tse_eleicoes.resultados_candidato_secao as r
+#         LEFT JOIN
+#         basedosdados.br_tse_eleicoes.candidatos as c
+#         ON (CAST(r.sequencial_candidato as string) = cast(c.sequencial as string) 
+#             AND CAST(r.numero_candidato as string) = CAST(c.numero as string))
+#         WHERE
+#         r.ano = 2024 AND r.id_municipio = "2611606" and r.cargo = "vereador"
+#         GROUP BY
+#         Nome_candidato,
+#         Secao,
+#         Zona;
+#     """
+#     votosecao = bd.read_sql(query = vtsquery, billing_project_id = billing_id)
+#     df = pd.DataFrame(votosecao)
+#     return df
 
-def load_infoloc():        
-    locquery =   """
-SELECT
-zona,
-secao,
-comparecimento,
-votos_nominais,
-votos_brancos,
-votos_nulos,
-votos_legenda,
-(votos_nominais + votos_legenda) as votos_validos
-FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao`
-WHERE ano = 2024 and id_municipio = "2611606" and cargo = "vereador"
-"""
-    infovotacao = bd.read_sql(query = locquery, billing_project_id = billing_id)
-    df = pd.DataFrame(infovotacao)
-    return df
+# def load_infoloc():        
+#     locquery =   """
+# SELECT
+# zona,
+# secao,
+# comparecimento,
+# votos_nominais,
+# votos_brancos,
+# votos_nulos,
+# votos_legenda,
+# (votos_nominais + votos_legenda) as votos_validos
+# FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao`
+# WHERE ano = 2024 and id_municipio = "2611606" and cargo = "vereador"
+# """
+#     infovotacao = bd.read_sql(query = locquery, billing_project_id = billing_id)
+#     df = pd.DataFrame(infovotacao)
+#     return df
 
-@st.cache_data(ttl=86400)
-def load_partido():  
-    ptquery =     """
-        with Votos_Partidos as
-        (SELECT 
-        zona,
-        secao,
-        sigla_partido,
-        votos_nominais,
-        votos_legenda,
-        (votos_nominais + votos_legenda) as votos_totais
-        FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
-        WHERE ano = 2024 and id_municipio = "2611606")
-        SELECT * FROM Votos_Partidos
-        """
-    votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
-    df = pd.DataFrame(votopartido)
-    return df
-
+# @st.cache_data(ttl=86400)
+# def load_partido():  
+#     ptquery =     """
+#         with Votos_Partidos as
+#         (SELECT 
+#         zona,
+#         secao,
+#         sigla_partido,
+#         votos_nominais,
+#         votos_legenda,
+#         (votos_nominais + votos_legenda) as votos_totais
+#         FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
+#         WHERE ano = 2024 and id_municipio = "2611606")
+#         SELECT * FROM Votos_Partidos
+#         """
+#     votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
+#     df = pd.DataFrame(votopartido)
+#     return df
+#%%
 DATA_DIR = Path("dados")
 
 @st.cache_data
-def load_geo(path: str | None = None) -> pd.DataFrame:
+def load_comparativo_rpa(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "locais.csv"
+        path = DATA_DIR / "rpa_comparitivo.csv"
     return pd.read_csv(path)
 
 def load_infopb(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "info_pb.csv"
+        path = DATA_DIR / "indincadores_pb.csv"
     return pd.read_csv(path)
-# %%
+
+@st.cache_data
+def load_rpa(path: str | None = None) -> pd.DataFrame:
+    if path is None:
+        path = DATA_DIR / "df_rpa.csv"
+    return pd.read_csv(path)
+
+@st.cache_data
+def load_map(path: str | None = None) -> pd.DataFrame:
+    if path is None:
+        path = DATA_DIR / "vt_loc.csv"
+    df = pd.read_csv(path)
+    df = df[df['RPA'].isin(['RPA2','RPA3'])]
+    return df
+
+@st.cache_data
+def load_corr(path: str | None = None) -> pd.DataFrame:
+    if path is None:
+        path = DATA_DIR / "correlations.csv"
+    df = pd.read_csv(path)
+    return df

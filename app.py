@@ -1,141 +1,150 @@
-#%%
-# Importando bibliotecas #
 import streamlit as st
-from streamlit_folium import st_folium
+import pandas as pd
+import plotly.express as px
+from core.carregar import load_comparativo_rpa, load_map, load_rpa, load_corr
 from visuals.mapa import display_mapa
-from core.header import dict_candidato
-from core.dados_pt import dados_pt
-from core.dados_voto import dados_votocao
-from core.carregar import load_cand, load_vt_edit, load_map, load_partidos_vt
-from visuals.graficos import graph_locais, graph_bairros, graph_candidatos, graph_candidatos_chapa
-#%%
-df_cand = load_cand()
-df_votos = load_vt_edit()
-df_map = load_map()
-df_partidos = load_partidos_vt()
+from streamlit_folium import st_folium
 
-with st.sidebar:
-    st.title("Resultado Eleições 2024 - Recife")
-    candidato = st.selectbox("Candidato (a)",df_cand["nome_urna"].sort_values().unique())
-    RPA = st.selectbox("RPA",["TODOS","RPA1","RPA2","RPA3","RPA4","RPA5","RPA6"])
-
-#dados de voto
-df_filtrado_VotoPorLocal = df_votos.copy()
-#dados candidato
-df_candidato = df_cand.copy()
-#usado no mapa
-df_map = df_map.copy()
-#dados de candidato + partido
-df_candidato_partidos = df_cand.copy()
-
-#Dados filtrados pelo input do usuário
-df_filtrado_VotoPorLocal = df_filtrado_VotoPorLocal[df_filtrado_VotoPorLocal['nome_candidato'] == candidato]
-df_candidato = df_candidato[df_candidato["nome_urna"] == candidato]
-df_map = df_map[df_map['nome_candidato']== candidato]
-
-if RPA == "TODOS":
-    pass
-else:
-    df_filtrado_VotoPorLocal = df_votos[df_votos["RPA"] == RPA]
-    df_map = df_map[df_map["RPA"] == RPA]
-    
-    
-# FICHA DO CANDIDATO
-# Criando a função para obtenção dos dados
-header = dict_candidato(df_candidato)
-st.markdown(f"#  Dados da eleição de: {candidato}")
-st.markdown(
-    f"""
-<style>
-.table-full {{
-    width: 100%;
-    border-collapse: collapse;
-}}
-.table-full th, .table-full td {{
-    border: 0.5px solid #ddd;
-    padding: 8px;
-}}
-.table-full th {{
-    font-weight: bold;
-    text-align: center;
-}}
-.table-full td:nth-child(2) {{
-    text-align: center;
-}}
-</style>
-
-<table class="table-full">
-    <tr><th>Métrica</th><th>Valor</th></tr>
-    <tr><td>Número de votos</td><td>{header["VOTOS"]}</td></tr>
-    <tr><td>Partido</td><td>{header["PARTIDO"]}</td></tr>
-    <tr><td>Idade</td><td>{header["IDADE"]} anos</td></tr>
-    <tr><td>Gênero</td><td>{header["GÊNERO"]}</td></tr>
-    <tr><td>Raça</td><td>{header["RAÇA"]}</td></tr>
-    <tr><td>Eleito?</td><td>{header["RESULTADO"]}</td></tr>
-</table>
-""",
-    unsafe_allow_html=True,
+# =========================================================
+# 🔧 CONFIGURAÇÃO DA PÁGINA
+# =========================================================
+st.set_page_config(
+    page_title="Programa Cultura que Pertence",
+    layout="wide",
+    page_icon="📊"
 )
 
-# MAPA DE VOTAÇÃO
-mapa = display_mapa(df_map)
-st.markdown(f"### :round_pushpin: **Mapa de votação {candidato}**")
-st_folium(mapa, width=800, height=700)
+# =========================================================
+# 📦 FUNÇÃO DE CARREGAMENTO (CACHE)
+# =========================================================
+df_bairros = load_rpa()
+df_map = load_map()
+df_comparativo = load_comparativo_rpa()
+df_corr = load_corr()
 
-# Dados de votação
-infovoto = dados_votocao(df_map)
+# =========================================================
+# 📊 FUNÇÕES PARA GERAR GRÁFICOS
+# =========================================================
+#Gráfico de Artista por Voto
+def grafico1(df):
+    media = int(df['Votos_PSB'].mean())
+    cores_itens = {
+    "RPA2": "#f9c393", 
+    "RPA3": "#0062ff"} 
+    fig = px.scatter(df, x="Artistas", y="Votos_PSB", 
+                     title="Quantidade de Artistas por quantidade de voto",
+                     labels ={"Votos_PSB":"Votos"}
+                     )
+    fig.update_traces(
+        marker_color=[cores_itens[p] for p in df['RPA']])
+    fig.update_yaxes(
+        tickformat=",")
+    fig.update_xaxes(range=[0, 400])    
+    fig.add_hline(
+    y=media,
+    line_dash="dash",
+    line_color="grey",
+    annotation_text=f"Média = {media:.2f}",
+    annotation_position="top left")
+    return fig
 
-infopartido = dados_pt(df_partidos, df_candidato)
+# Gráfico de Top 5 bairros sem participação do partido
+def grafico2(df):
+    fig = px.bar(df, x="longitude", y="latitude", title="Gráfico 3")
+    return fig
 
-st.markdown("###  :ballot_box_with_ballot: **Dados eleitorais & Partidários**")
-#Definindo estrutura de exposição
+# Gráfico mostrando a correlação
+def grafico3(df):
+    destacar = "inscritos"
+    df["cor"] = df["corr"].apply(
+    lambda x: "blue" if x == destacar else "gray")
+    df['corr'] = df['corr'].rename()
+    fig = px.bar(df, x="corr", y="valor", 
+                 title="Taxa de correlação entre Votos e Indicadores Culturais",
+                 color='cor', labels={'corr':'Correlações', 'valor':'Força'},
+                 subtitle='Correlação forte entre votos e artistas',
+                 text='valor')
+    fig.update_layout(showlegend=False)
+    return fig
+
+# Barplot mostrando as diferenças de impacto de cada bairro
+def grafico4(df):
+    fig = px.histogram(df, x="valor", title="Gráfico 4")
+    return fig
+
+# Dado de cadunico por % de participação e tamanho de artistas
+def grafico5(df):
+    fig = px.box(df, x="bairro", y="valor", title="Gráfico 5")
+    return fig
+
+# Scatter mostrando a relação de negritude e artistas, com tamanho baseado em cadunico
+def grafico6(df):
+    fig = px.area(df, x="ano", y="valor", title="Gráfico 6")
+    return fig
+
+# =========================================================
+# 🧱 LAYOUT DA PÁGINA
+# =========================================================
+
+st.title("📊 Decisão baseada em informação")
+
+st.markdown("### 🔹 Filtros de visualização")
+
+col_f1, col_f2, col_f3 = st.columns([1.5, 1.5, 1])
+
+with col_f1:
+    lista_bairros = ["TODOS"] + sorted(df_map["EBAIRRNOMEOF"].dropna().unique().tolist())
+    bairro_select = st.selectbox("Selecione o bairro", lista_bairros)
+
+with col_f2:
+    rpa = ["RPA2 & RPA3"] + sorted(df_map["RPA"].dropna().unique().tolist())
+    rpa_select = st.selectbox("RPA", rpa)
+
+with col_f3:
+    st.write("")
+    st.write("")
+    aplicar_filtro = st.button("Aplicar")
+
+# filtros respondem mesmo sem clicar
+if aplicar_filtro:
+    pass
+
+# APLICAÇÃO DOS FILTROS
+df_filtrado = df_map.copy()
+df_bairro_f = df_bairros.copy()
+
+if bairro_select != "TODOS":
+    df_filtrado = df_filtrado[df_filtrado["EBAIRRNOMEOF"] == bairro_select]
+    df_bairro_f = df_bairro_f[df_bairro_f["EBAIRRNOMEOF"] == bairro_select]
+
+if rpa_select != "RPA2 & RPA3":
+    df_filtrado = df_filtrado[df_filtrado["RPA"] == rpa_select]
+    df_bairro_f = df_bairro_f[df_bairro_f["RPA"] == rpa_select]
+
+st.markdown("### 🔹 Sessão de Gráficos")
+
+# ---- Linha 1 ----
 col1, col2 = st.columns(2)
-
 with col1:
-    with st.container(border=True):
-        st.metric(
-            label = "Total de votos",
-            value = infovoto["Total de votos"]
-        )
-    with st.container(border=True):    
-        st.metric(
-            label = "% votos em relação à chapa",
-            value = infopartido["Percentual votos"]        
-        )
-
+    st.plotly_chart(grafico1(df_bairro_f), use_container_width=True)
 with col2:
-    with st.container(border=True):
-        st.metric(
-            label = "Mediana dos votos",
-            value = infovoto["Mediana"],
-       )
-    with st.container(border=True):
-        st.metric(
-            label = "Total votos da chapa",
-            value = infopartido["Votos totais da chapa"]
-        )
-        
-# GRÁFICOS
-st.markdown("""\n""")
-st.markdown("### :bar_chart: **Gráficos**")
+    st.plotly_chart(grafico3(df_filtrado), use_container_width=True)
 
-# Plotando gráficos
-col1, col2 = st.columns(2)
+# ---- Linha 2 ----
+col3, col4 = st.columns(2)
+with col3:
+    st.plotly_chart(grafico2(df_corr), use_container_width=True)
+with col4:
+    st.plotly_chart(grafico4(df_filtrado), use_container_width=True)
 
-plot_votos_candidatos = graph_candidatos(df_cand)
-plot_bairros = graph_bairros(df_filtrado_VotoPorLocal)
-with col1:
-    with st.container(border=True):
-        st.plotly_chart(plot_votos_candidatos, use_container_width=True)
-    with st.container(border=True):
-        st.plotly_chart(plot_bairros, use_container_width=True)
+# ---- Linha 3 ----
+col5, col6 = st.columns(2)
+with col5:
+    st.plotly_chart(grafico5(df_filtrado), use_container_width=True)
+with col6:
+    st.plotly_chart(grafico6(df_filtrado), use_container_width=True)
 
-
-plot_votos_chapa = graph_candidatos_chapa(df_candidato_partidos, df_candidato)
-plot_locais = graph_locais(df_filtrado_VotoPorLocal)
-with col2:
-        with st.container(border=True):
-            st.plotly_chart(plot_votos_chapa, use_container_width=True)
-            
-        with st.container(border=True):
-            st.plotly_chart(plot_locais, use_container_width=True)
+# ---- MAPA ----
+st.markdown("### 🌍 Mapa Interativo")
+mapa_final = display_mapa(df_filtrado)
+st_folium(mapa_final, width=1200, height=600)
