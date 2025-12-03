@@ -1,6 +1,7 @@
 #%%
 import basedosdados as bd
 import pandas as pd
+import geopandas as gpd
 import streamlit as st
 from pathlib import Path
 #%%
@@ -99,22 +100,18 @@ from pathlib import Path
 #%%
 DATA_DIR = Path("dados")
 
-@st.cache_data
 def load_comparativo_rpa(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "rpa_comparitivo.csv"
-    return pd.read_csv(path)
-
-def load_infopb(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "indincadores_pb.csv"
+        path = DATA_DIR / "rpa_comparativo.csv"
     return pd.read_csv(path)
 
 @st.cache_data
 def load_rpa(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "df_rpa.csv"
-    return pd.read_csv(path)
+    df = pd.read_csv(path)
+    df = df[df['RPA'].isin(['RPA2','RPA3'])]
+    return df
 
 @st.cache_data
 def load_map(path: str | None = None) -> pd.DataFrame:
@@ -128,5 +125,12 @@ def load_map(path: str | None = None) -> pd.DataFrame:
 def load_corr(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "correlations.csv"
+    df = pd.read_csv(path)
+    return df
+
+@st.cache_data
+def load_geomap(path: str | None = None) -> pd.DataFrame:
+    if path is None:
+        path = DATA_DIR / "df_pb.csv"
     df = pd.read_csv(path)
     return df
