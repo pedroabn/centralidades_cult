@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import plotly.express as px
 from core.carregar import load_comparativo_rpa, load_map, load_rpa, load_corr, load_geomap
 from visuals.mapa import display_mapa
