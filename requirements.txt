@@ -8,9 +8,12 @@ plotly>=5.17.0
 folium>=0.14.0
 streamlit-folium>=0.15.0
 branca>=0.6.0
+openpyxl
+pygeoif
 
 # Data source (optional - only needed if fetching data directly from Base dos Dados)
 basedosdados>=2.0.0b9
 
 # Additional utilities
 pathlib>=1.0.1
+
