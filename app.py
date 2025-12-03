@@ -49,16 +49,15 @@ def grafico1(df):
     annotation_position="top left")
     return fig
 
-# Gráfico de Top 5 bairros sem participação do partido
 def grafico2(df):
-    df = df.sort_values(by='pct_local', ascending=True).head(5)
+    df = df.sort_values(by='inscritos', ascending=True)
     cores_itens = {
         "RPA2": "#f9c393", 
         "RPA3": "#0062ff"} 
-    fig = px.bar(df, y='pct_local', x='local', orientation='v', 
-    hover_data=["votos",'EBAIRRNOMEOF'] ,title=f"Top 5 locais com menos participação {rpa_select}",
+    fig = px.bar(df, y='inscritos', x='RPA', orientation='v', 
+    hover_data=["votos_bairro",'conv_social'] ,title=f"Top 5 locais com menos participação {rpa_select}",
     subtitle='Os votos gerais mostram que nem sempre é sobre o total, mas que ainda há espaço para crescimento',
-    text='votos',
+    text='pct_local',
     labels ={"pct_local":"% de votos", "local":"Local"})
     fig.update_traces(
         marker_color=[cores_itens[p] for p in df['RPA']])    
@@ -154,12 +153,13 @@ if bairro_select != "TODOS":
     df_filtrado = df_filtrado[df_filtrado["EBAIRRNOMEOF"] == bairro_select]
     df_bairro_f = df_bairro_f[df_bairro_f["EBAIRRNOMEOF"] == bairro_select]
     df_geo = df_geo[df_geo["EBAIRRNOMEOF"] == bairro_select]
-    
+    df_comparativo = df_comparativo[df_comparativo["EBAIRRNOMEOF"] == bairro_select]
 
 if rpa_select != "RPA2 & RPA3":
     df_filtrado = df_filtrado[df_filtrado["RPA"] == rpa_select]
     df_bairro_f = df_bairro_f[df_bairro_f["RPA"] == rpa_select]
     df_geo = df_geo[df_geo["RPA"] == rpa_select]
+    df_comparativo = df_comparativo[df_comparativo["RPA"] == rpa_select]
 
 st.markdown("### 🔹 Sessão de Gráficos")
 
@@ -168,7 +168,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.plotly_chart(grafico1(df_bairro_f), use_container_width=True)
 with col2:
-    st.plotly_chart(grafico2(df_filtrado), use_container_width=True)
+    st.plotly_chart(grafico2(df_geo), use_container_width=True)
 
 # ---- Linha 2 ----
 col3, col4 = st.columns(2)
