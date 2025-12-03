@@ -170,14 +170,14 @@ st.markdown("### 🔹 Sessão de Gráficos")
 # ---- Linha 1 ----
 col1, col2 = st.columns(2)
 with col1:
-    st.plotly_chart(grafico1(df_bairro_f), use_container_width=True)
-with col2:
     st.plotly_chart(grafico3(df_corr), use_container_width=True)
+with col2:
+    st.plotly_chart(grafico2(df_geo), use_container_width=True)
 
 # ---- Linha 2 ----
 col3, col4 = st.columns(2)
 with col3:
-    st.plotly_chart(grafico2(df_geo), use_container_width=True)
+    st.plotly_chart(grafico1(df_bairro_f), use_container_width=True)
 with col4:
     st.plotly_chart(grafico4(df_comparativo), use_container_width=True)
 
