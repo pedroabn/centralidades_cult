@@ -69,7 +69,6 @@ def grafico2(df):
         title_x=0.2,
         title_subtitle_font_lineposition='over'  
     )
-    fig.update_yaxes(tickformat=".0f")
     return fig
 
 # Gráfico mostrando a correlação
