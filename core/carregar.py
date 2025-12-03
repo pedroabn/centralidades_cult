@@ -1,7 +1,6 @@
 #%%
 import basedosdados as bd
 import pandas as pd
-import geopandas as gpd
 import streamlit as st
 from pathlib import Path
 #%%
@@ -133,4 +132,5 @@ def load_geomap(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "df_pb.csv"
     df = pd.read_csv(path)
+    df = df[df['RPA'].isin(['RPA2','RPA3'])]
     return df
