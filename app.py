@@ -62,7 +62,7 @@ def grafico2(df):
     fig = px.bar(df, y='Artistas', x='RPA', orientation='v', 
     hover_data=["votos_bairro",'conv_social'] ,title=f" Quantitativo de Artistas na {rpa_select}",
     subtitle='Os números mostram uma boa base de fazedores de cultura',
-    text='votos_bairro',)
+    text='Artistas',)
     fig.update_traces(
         marker_color=[cores_itens[p] for p in df['RPA']])    
     fig.update_layout(
