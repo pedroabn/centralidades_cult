@@ -51,14 +51,18 @@ def grafico1(df):
 
 def grafico2(df):
     df = df.sort_values(by='inscritos', ascending=True)
+    df = df.groupby(['RPA','sigla_partido'], as_index=False).agg(
+        Artistas = ('inscritos','sum'),
+        conv_social = ('conv_social','sum'),
+        votos_bairro = ('votos_bairro','sum')
+    )    
     cores_itens = {
         "RPA2": "#f9c393", 
         "RPA3": "#0062ff"} 
-    fig = px.bar(df, y='inscritos', x='RPA', orientation='v', 
-    hover_data=["votos_bairro",'conv_social'] ,title=f"Top 5 locais com menos participação {rpa_select}",
-    subtitle='Os votos gerais mostram que nem sempre é sobre o total, mas que ainda há espaço para crescimento',
-    text='pct_local',
-    labels ={"pct_local":"% de votos", "local":"Local"})
+    fig = px.bar(df, y='Artistas', x='RPA', orientation='v', 
+    hover_data=["votos_bairro",'conv_social'] ,title=f" Quantitativo de Artistas na {rpa_select}",
+    subtitle='Os números mostram uma boa base de fazedores de cultura',
+    text='votos_bairro',)
     fig.update_traces(
         marker_color=[cores_itens[p] for p in df['RPA']])    
     fig.update_layout(
