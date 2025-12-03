@@ -3,33 +3,37 @@ import folium
 from folium.plugins import MiniMap
 import branca.colormap as cm
 import pandas as pd
+import pygeoif
 
 def csv_para_geojson(df):
     features = []
+    
     for _, row in df.iterrows():
+        geom = pygeoif.from_wkt(row["geometry"])  # correto
+
         features.append({
             "type": "Feature",
             "properties": {
                 "EBAIRRNOMEOF": row["EBAIRRNOMEOF"],
+                "votos_bairro": row["votos_bairro"],
                 "inscritos": row["inscritos"],
-                "total_pessoas": row["total_pessoas"]
+                "conv_social": row["conv_social"],
+                "negros": row["negros"],
+                "Infancia": row["Infancia"],
+                "Idosos": row["Idosos"],
             },
-            "geometry": {
-                "type": "Point",
-                "coordinates": [row["longitude"], row["latitude"]]
-            }
+            "geometry": geom.__geo_interface__,  # GeoJSON direto
         })
-    
-    geojson = {
+
+    return {
         "type": "FeatureCollection",
         "features": features
     }
-    return geojson
 
-def display_mapa(df_filtrado, df_geo, df_t):
+def display_mapa(df_filtrado, df_geo):
     geojson = csv_para_geojson(df_geo)
-    recife_coords = [-8.05428, -34.88126]
-    m = folium.Map(location=recife_coords, zoom_start=10, tiles="Cartodb dark_matter")
+    recife_coords = [-8.014631171614337, -34.9134694067467]
+    m = folium.Map(location=recife_coords, zoom_start=13, tiles="Cartodb dark_matter")
 
     MiniMap(toggle_display=True).add_to(m)
     linear = cm.linear.Blues_08.scale(
@@ -44,9 +48,9 @@ def display_mapa(df_filtrado, df_geo, df_t):
         geojson,
         name="Bairros",
         style_function=lambda f: {
-            "color": "black",
+            "color": "grey",
             "weight": 0.5,
-            "fillOpacity": 0.1,
+            "fillOpacity": 0.2,
         },
         tooltip=folium.GeoJsonTooltip(
             fields=["EBAIRRNOMEOF", "votos_bairro", "inscritos",
@@ -69,7 +73,7 @@ def display_mapa(df_filtrado, df_geo, df_t):
         )
         folium.Circle(
             location=(row.latitude, row.longitude),
-            radius = max((row.pct_local), 10),
+            radius = max((row.pct_local)*3, 2),
             color = "black",
             weight = 0.2,
             fillColor = linear(row.votos),
@@ -77,4 +81,5 @@ def display_mapa(df_filtrado, df_geo, df_t):
             fillOpacity = 0.8,
             popup=popup,
         ).add_to(m)
+        
     return m
