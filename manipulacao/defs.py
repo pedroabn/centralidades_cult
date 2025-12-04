@@ -5,7 +5,7 @@ import re
 import streamlit as st
 import unicodedata
 from manipulacao.mapping import vencedores, RPA1,RPA2,RPA3,RPA4,RPA5,RPA6, bairros
-from core.carregar import load_cand, load_partido,load_vtsec,load_infoloc, load_geo, load_infopb
+from core.carregar import load_partido,load_infoloc, load_locais, load_infopb
 #%%
 def limpar_acento(txt):
     if pd.isnull(txt):
@@ -14,39 +14,74 @@ def limpar_acento(txt):
         if not unicodedata.combining(ch))
     return txt
 
-def get_ze(valor):
-    """Explode string de seções em lista de inteiros"""
-    if pd.isna(valor): return []
-    s = str(valor)
-    parts = [p.strip() for p in re.split(r",|;|\n", s) if p.strip()]
-    secoes = []
-    for p in parts:
-        m = re.match(r"^(\d{1,4})\s*(?:-|–|a|até)\s*(\d{1,4})$", p)
-        if m:
-            a, b = int(m.group(1)), int(m.group(2))
-            secoes.extend(range(min(a,b), max(a,b)+1))
-        else:
-            num = re.sub(r"[^\d]", "", p)
-            if num: secoes.append(int(num))
-    return secoes
+import pandas as pd
+import re
+from typing import List
 
-def zona_sec(df):
-    df['CD_Local'] = df['CD_Local'].astype(int)
-    linhas = []
-    for _, r in df.iterrows():
-        for s in get_ze(r["secao"]):
-            linhas.append({
-                "zona": int(r["zona"]),
-                "secao": s,
-                "CD_Local": int(r["CD_Local"]),
-                "local": r["Nome do Local"],
-                "endereco": r["Endereço"],
-                "EBAIRRNOMEOF": r["Bairro"],
-                "latitude": str(r["Latitude"]),
-                "longitude": str(r["Longitude"])
+def extrair_secoes(valor_secao: str) -> List[int]:
+    """
+    Extrai e expande seções a partir de string com formatos variados.    
+    Args:
+        valor_secao: String contendo seções
+        
+    Returns:
+        Lista de números de seção únicos e ordenados
+    """
+    if pd.isna(valor_secao):
+        return []
+    
+    secoes = []
+    partes = re.split(r'[,;\n]', str(valor_secao))
+    
+    for parte in partes:
+        parte = parte.strip()
+        if not parte:
+            continue
+            
+        # Detecta intervalos (ex: "100-105", "100 a 105", "100–105")
+        intervalo = re.match(r'^(\d{1,4})\s*(?:-|–|a|até)\s*(\d{1,4})$', parte)
+        if intervalo:
+            inicio, fim = int(intervalo.group(1)), int(intervalo.group(2))
+            secoes.extend(range(min(inicio, fim), max(inicio, fim) + 1))
+        else:
+            # Extrai apenas dígitos
+            numeros = re.findall(r'\d+', parte)
+            if numeros:
+                secoes.append(int(numeros[0]))
+    
+    # Remove duplicatas e ordena
+    return sorted(set(secoes))
+
+def expandir_secoes_por_local(df: pd.DataFrame) -> pd.DataFrame:
+    # Garante tipo correto do código do local
+    df['Código do Local'] = df['Código do Local'].astype(int)
+    
+    linhas_expandidas = []
+    
+    for _, registro in df.iterrows():
+        secoes_local = extrair_secoes(registro['Seções'])
+        
+        for secao in secoes_local:
+            linhas_expandidas.append({
+                'zona': registro['Zona'],
+                'secao': secao,
+                'CD_Local': int(registro['Código do Local']),
+                'local': registro['Nome do Local'],
+                'endereco': registro['Endereço'],
+                'EBAIRRNOMEOF': registro['Bairro'],
+                'latitude': float(registro['Latitude']) if pd.notna(registro['Latitude']) else None,
+                'longitude': float(registro['Longitude']) if pd.notna(registro['Longitude']) else None
             })
-    zonas = pd.DataFrame(linhas)
-    return zonas
+    
+    df_expandido = pd.DataFrame(linhas_expandidas)
+    df_expandido['zona'] = df_expandido['zona'].astype(str)
+    df_expandido['secao'] = df_expandido['secao'].astype(str)
+    
+    # Validação básica
+    if df_expandido.empty:
+        raise ValueError("Nenhuma seção foi extraída do DataFrame")
+    
+    return df_expandido
 
 def load_cluster(df):
     # Leitura do tse e divisão para cada seção e 
@@ -85,55 +120,50 @@ def limpar_col(df):
     return df
 
 # %%
-def loc_zonas():
-    zonascru = load_geo()
-    dfcru = zona_sec(zonascru)
-    df = load_cluster(dfcru)
-    df['EBAIRRNOMEOF'] = df['EBAIRRNOMEOF'].map(bairros).fillna(df['EBAIRRNOMEOF'])
+def loc_basico():
+    db = load_locais()
+    dfz = expandir_secoes_por_local(db)
+    dfz['EBAIRRNOMEOF'] = dfz['EBAIRRNOMEOF'].map(bairros).fillna(dfz['EBAIRRNOMEOF'])
+    df = load_cluster(dfz)
     return df
 
-def vt_loc():
-    dfz = loc_zonas()
-    votoscru = load_vtsec()
-    df = votoscru.merge(dfz, on=['secao','zona'], how='left')
-    return df
-# votos_local vai ser o nome do import com os dados de votação de cada candidato, em cada local
-
-
-def perfil_cand():
-    votos_local = vt_loc()
-    candidatocru = load_cand()    
-    votostotais = votos_local.groupby(['nome_candidato']).agg(
-                            votos = ('votos_recebidos','sum')
-                                    ).reset_index()
-    candidato = resultado(candidatocru)
-    df = candidato.merge(votostotais, right_on='nome_candidato',left_on='nome_urna', how='left')
-    return df
-# Candidato vai ser o nome do import com os dados de perfil de cada candidato
-
-def infoloc():
-    dfz = loc_zonas()    
-    infolocru = load_infoloc()
-    df = infolocru.merge(dfz, on=['secao','zona'], how='left')
+def info_loc():
+    dfz = loc_basico()
+    infoloc = load_infoloc()
+    dfl = infoloc.merge(dfz, on=['secao','zona'], how='left')
+    df = dfl.groupby((['zona','CD_Local', 'local', 'endereco',
+       'EBAIRRNOMEOF', 'latitude', 'longitude', 'RPA']), as_index=False).agg(
+           comparecimento  =  ('comparecimento','sum'),
+           votos_validos = ('votos_validos','sum'))
     return df
 
 
-def db_partido():
-    dfz = infoloc()
+def loc_votos():
+    dfz = loc_basico()
     ptd = load_partido()   
-    df = (ptd.merge(dfz, on = ['zona','secao'], how='left')
-      .groupby(['local','zona','EBAIRRNOMEOF','RPA',
-                'latitude','longitude','sigla_partido'])
-      .agg( votos = ('votos_partido','sum'),
-            comparecimento = ('comparecimento','mean')
+    dfc = (ptd.merge(dfz, on = ['zona','secao'], how='left')
+      .groupby(['zona','local','EBAIRRNOMEOF','RPA',
+                'latitude','longitude'])
+      .agg( votos = ('votos_partido','sum')
             ).reset_index())
-    df['pct_local'] = df['pct_local']
+    df_iloc = info_loc()
+    df = (dfc.merge(df_iloc, on=['local','zona','EBAIRRNOMEOF',
+                                 'latitude','longitude','RPA'], how='left'))
+    df['pct_local'] =(df['votos']/ df['comparecimento'])*100
     return df
-
 
 def info_pbvoto():
     infopb = load_infopb()
-    ptd = db_partido()
+    infopb = infopb.drop(columns={'Unnamed: 0'})
+    locvotos = loc_votos()
+    ptd = (locvotos.groupby(['EBAIRRNOMEOF','RPA'])
+      .agg(votos = ('votos','sum')
+            ).reset_index())
     df = ptd.merge(infopb, on='EBAIRRNOMEOF', how='left')
     return df
+
+def mapa_votos():
+    df = loc_votos()
+    return df
+    
 # %%
