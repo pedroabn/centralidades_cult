@@ -122,9 +122,9 @@ def limpar_col(df):
 # %%
 def loc_basico():
     db = load_locais()
-    dfz = expandir_secoes_por_local(db)
-    dfz['EBAIRRNOMEOF'] = dfz['EBAIRRNOMEOF'].map(bairros).fillna(dfz['EBAIRRNOMEOF'])
-    df = load_cluster(dfz)
+    db = db.rename(columns={'bairro':'EBAIRRNOMEOF'})
+    db['EBAIRRNOMEOF'] = db['EBAIRRNOMEOF'].map(bairros).fillna(db['EBAIRRNOMEOF'])
+    df = load_cluster(db)
     return df
 
 def info_loc():

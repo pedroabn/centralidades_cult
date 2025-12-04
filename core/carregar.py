@@ -87,10 +87,9 @@ def load_geomap(path: str | None = None) -> pd.DataFrame:
     df = df[df['RPA'].isin(['RPA2','RPA3'])]
     return df
 
-@st.cache_data
 def load_locais(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "locais_22.csv"
+        path = DATA_DIR / "locais.json"
     df = pd.read_json(path)
     return df
 # %%
