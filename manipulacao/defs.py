@@ -122,8 +122,13 @@ def limpar_col(df):
 # %%
 def loc_basico():
     db = load_locais()
-    db = db.rename(columns={'bairro':'EBAIRRNOMEOF'})
-    db['EBAIRRNOMEOF'] = db['EBAIRRNOMEOF'].map(bairros).fillna(db['EBAIRRNOMEOF'])
+    db['EBAIRRNOMEOF'] =np.where((db['bairro_get'])!= 0, db['bairro_get'], db['bairro'])
+    db = db.drop(columns=['bairro_get','bairro'])
+    db['EBAIRRNOMEOF'] = db['EBAIRRNOMEOF'].map(bairros).fillna(db['EBAIRRNOMEOF']).str.upper().apply(limpar_acento)
+    db['secao'] = db['secao'].fillna(0)
+    db['secao'] = db['secao'].astype(int).astype(str)
+    db['zona'] = db['zona'].astype(int).astype(str)
+    db['local_id'] = db['local_id'].astype(int).astype(str)
     df = load_cluster(db)
     return df
 
@@ -131,23 +136,23 @@ def info_loc():
     dfz = loc_basico()
     infoloc = load_infoloc()
     dfl = infoloc.merge(dfz, on=['secao','zona'], how='left')
-    df = dfl.groupby((['zona','CD_Local', 'local', 'endereco',
+    df = dfl.groupby((['zona','local_id', 'nome_local',
        'EBAIRRNOMEOF', 'latitude', 'longitude', 'RPA']), as_index=False).agg(
            comparecimento  =  ('comparecimento','sum'),
-           votos_validos = ('votos_validos','sum'))
+           votos_validos = ('votos_validos','sum')).reset_index()
     return df
-
 
 def loc_votos():
     dfz = loc_basico()
     ptd = load_partido()   
     dfc = (ptd.merge(dfz, on = ['zona','secao'], how='left')
-      .groupby(['zona','local','EBAIRRNOMEOF','RPA',
+      .groupby(['zona','nome_local','EBAIRRNOMEOF','RPA',
                 'latitude','longitude'])
-      .agg( votos = ('votos_partido','sum')
+      .agg( votos = ('votos_partido','sum'),
+           votos_nominais = ('votos_nominais','sum')
             ).reset_index())
     df_iloc = info_loc()
-    df = (dfc.merge(df_iloc, on=['local','zona','EBAIRRNOMEOF',
+    df = (dfc.merge(df_iloc, on=['nome_local','zona','EBAIRRNOMEOF',
                                  'latitude','longitude','RPA'], how='left'))
     df['pct_local'] =(df['votos']/ df['comparecimento'])*100
     return df
@@ -157,13 +162,9 @@ def info_pbvoto():
     infopb = infopb.drop(columns={'Unnamed: 0'})
     locvotos = loc_votos()
     ptd = (locvotos.groupby(['EBAIRRNOMEOF','RPA'])
-      .agg(votos = ('votos','sum')
+      .agg(votos = ('votos','sum'),
+           votos_nominais = ('votos_nominais','sum'),
+           qtd_locais = ('nome_local','count')
             ).reset_index())
     df = ptd.merge(infopb, on='EBAIRRNOMEOF', how='left')
     return df
-
-def mapa_votos():
-    df = loc_votos()
-    return df
-    
-# %%

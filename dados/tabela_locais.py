@@ -1,18 +1,44 @@
 ﻿#%%
 import requests
-import zipfile
-import io
 from pathlib import Path
 import pandas as pd
+import time
+
+def buscar_bairro(lat, lon):
+    """
+    Busca o bairro a partir de latitude e longitude.
+    Retorna None se lat/lon forem inválidos.
+    """
+    # Verifica se os valores são válidos
+    if pd.isna(lat) or pd.isna(lon):
+        return None
+    url = "https://nominatim.openstreetmap.org/reverse"
+    params = {
+        'lat': lat,
+        'lon': lon,
+        'format': 'json',
+        'addressdetails': 1}
+    headers = {'User-Agent': 'GeoApp/1.0'} 
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            address = data.get('address', {})
+            # Retorna o bairro
+            bairro = (address.get('suburb') or 
+                     address.get('neighbourhood') or 
+                     address.get('quarter') or
+                     address.get('district') or
+                     None)
+            print(f'Peguei o bairro')
+            time.sleep(1.1)  # Pausa obrigatória entre requisições
+            return bairro
+    except Exception as e:
+        print(f"Erro: {e}")
+    return None
 
 
 def api_tre():
-    """
-    Lê a API oficial do TRE-PE de locais de votação (2024)
-    e retorna os locais apenas do município de Recife,
-    contendo: zona, local, bairro, latitude, longitude.
-    """
-
     url = "https://apps.tre-pe.jus.br/locaisVotacao/locais"
 
     # Baixar JSON
@@ -31,6 +57,7 @@ def api_tre():
         "numerozona",
         "numerolocal",
         "nome",
+        'cep', #Posso testar pegar direto pelo cep usando a API se der errado
         "bairro",
         "latitude",
         "longitude"
@@ -45,10 +72,10 @@ def api_tre():
     # Ordenação padrão
     df_recife = df_recife.sort_values(["zona", "nome_local"]).reset_index(drop=True)
     df_recife['local_id'] = df_recife['local_id'].astype(str)
+    df_recife['bairro_get'] = df_recife.apply(lambda row: buscar_bairro(row['latitude'], row['longitude']), axis=1)
     return df_recife
 
 DATA_DIR = Path("dados")
-
 def api_tse(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "locais_tse.csv"
@@ -67,7 +94,6 @@ def api_tse(path: str | None = None) -> pd.DataFrame:
 def loc_base():
     tse = api_tse()
     tre = api_tre()
-
     # merge usando zona + local_id
     df = tre.merge(
         tse,
@@ -78,16 +104,16 @@ def loc_base():
 
     # ordenar
     df = df.sort_values(["zona", "secao"]).reset_index(drop=True)
+    df = df.fillna(0)
 
     return df
 
 # %%
 df = loc_base()
-
 cols = list(df.columns)
 # remove 'secao' da posição atual e insere na posição 1
 cols.insert(1, cols.pop(cols.index("secao")))
 df = df[cols]
 
 df.to_json('dados/locais.json')
-df.to_csv('locais.csv')
+df.to_csv('locais_II.csv')
