@@ -3,6 +3,8 @@ import requests
 from pathlib import Path
 import pandas as pd
 import time
+import numpy as np
+import unicodedata
 
 def buscar_bairro(lat, lon):
     """
@@ -37,6 +39,12 @@ def buscar_bairro(lat, lon):
         print(f"Erro: {e}")
     return None
 
+def limpar_acento(txt):
+    if pd.isnull(txt):
+        return txt
+    txt = ''.join(ch for ch in unicodedata.normalize('NFKD', txt) 
+        if not unicodedata.combining(ch))
+    return txt
 
 def api_tre():
     url = "https://apps.tre-pe.jus.br/locaisVotacao/locais"
@@ -73,6 +81,10 @@ def api_tre():
     df_recife = df_recife.sort_values(["zona", "nome_local"]).reset_index(drop=True)
     df_recife['local_id'] = df_recife['local_id'].astype(str)
     df_recife['bairro_get'] = df_recife.apply(lambda row: buscar_bairro(row['latitude'], row['longitude']), axis=1)
+    df_recife['bairro_get'] =  (df_recife['bairro_get'].str.upper()
+                          .apply(limpar_acento)
+                          .replace({'COHAB':'COHAB - IBURA DE CIMA',
+                          'SITIO DOS PINTOS':'SITIO DOS PINTOS - SAO BRAS'}))   
     return df_recife
 
 DATA_DIR = Path("dados")
@@ -101,8 +113,8 @@ def loc_base():
         how="left",
         suffixes=("_tse", "_tre")
     )
-
-    # ordenar
+    df['bairro_1'] = np.where(df['bairro_get'] != 0, df['bairro'], df['bairro_get'])
+    # organizar 
     df = df.sort_values(["zona", "secao"]).reset_index(drop=True)
     df = df.fillna(0)
 

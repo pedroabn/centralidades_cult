@@ -3,6 +3,7 @@ import basedosdados as bd
 import pandas as pd
 import streamlit as st
 import requests
+import geopandas as gpd
 from pathlib import Path
 #%%
 # As bases de dados serão baseadas em local. A ideia, é trazer todos os dados de votação e buscar forma de criar relaões de impacto do
@@ -19,7 +20,7 @@ from pathlib import Path
 #%% Dados retirados pela API do Base dos Dados as bd
 billing_id = 'dados-eleicao-470222'
 
-@st.cache_data(ttl=86400)
+@st.cache_data
 def load_infoloc():        
     locquery =   """
 SELECT
@@ -28,48 +29,43 @@ secao,
 comparecimento,
 (votos_nominais + votos_legenda) as votos_validos
 FROM `basedosdados.br_tse_eleicoes.detalhes_votacao_secao`
-WHERE ano = 2024 and id_municipio = "2611606" and cargo = "vereador"
+WHERE ano = 2024 and id_municipio = "2611606" and cargo in ("vereador",'prefeito')
 """
     infovotacao = bd.read_sql(query = locquery, billing_project_id = billing_id)
     df = pd.DataFrame(infovotacao)
     return df
 
+@st.cache_data
 def load_partido():  
     ptquery =     """
-    SELECT 
-        zona,
-        secao,
-        SUM(votos_nominais + votos_legenda) as votos_partido
-        FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
-        WHERE ano = 2024 and id_municipio = "2611606"
-            and id_eleicao="619" and turno=1 and sigla_partido = "PSB"
-        GROUP BY zona, secao
-        """
+SELECT 
+zona,
+secao,
+votos_nominais,
+votos_legenda,
+(votos_nominais + votos_legenda) as votos_partido
+FROM `basedosdados.br_tse_eleicoes.resultados_partido_secao`
+WHERE ano = 2024 and id_municipio = "2611606" and id_eleicao="619" and sigla_partido = "PSB"
+    """
     votopartido = bd.read_sql(query = ptquery, billing_project_id = billing_id)
     df = pd.DataFrame(votopartido)
     return df
 #%%
 DATA_DIR = Path("dados")
 
-def load_comparativo_rpa(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "rpa_comparativo.csv"
-    return pd.read_csv(path)
-
 @st.cache_data
-def load_rpa(path: str | None = None) -> pd.DataFrame:
+def load_indpb(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "df_rpa.csv"
+        path = DATA_DIR / "indicadores_pb.csv"
     df = pd.read_csv(path)
-    df = df[df['RPA'].isin(['RPA2','RPA3'])]
     return df
 
+
 @st.cache_data
-def load_map(path: str | None = None) -> pd.DataFrame:
+def load_infopb(path: str | None = None) -> pd.DataFrame:
     if path is None:
-        path = DATA_DIR / "vt_loc.csv"
+        path = DATA_DIR / "info_pb.csv"
     df = pd.read_csv(path)
-    df = df[df['RPA'].isin(['RPA2','RPA3'])]
     return df
 
 @st.cache_data
@@ -80,16 +76,15 @@ def load_corr(path: str | None = None) -> pd.DataFrame:
     return df
 
 @st.cache_data
-def load_geomap(path: str | None = None) -> pd.DataFrame:
-    if path is None:
-        path = DATA_DIR / "df_pb.csv"
-    df = pd.read_csv(path)
-    df = df[df['RPA'].isin(['RPA2','RPA3'])]
-    return df
-
 def load_locais(path: str | None = None) -> pd.DataFrame:
     if path is None:
         path = DATA_DIR / "locais.json"
     df = pd.read_json(path)
     return df
-# %%
+
+@st.cache_data
+def load_bairros(path: str | None = None) -> gpd.GeoDataFrame:
+    if path is None:
+        path = DATA_DIR / "bairros.geojson"
+    df = gpd.read_file(path)
+    return df
