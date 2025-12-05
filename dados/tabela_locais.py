@@ -113,11 +113,10 @@ def loc_base():
         how="left",
         suffixes=("_tse", "_tre")
     )
-    df['bairro_1'] = np.where(df['bairro_get'] != 0, df['bairro'], df['bairro_get'])
     # organizar 
     df = df.sort_values(["zona", "secao"]).reset_index(drop=True)
     df = df.fillna(0)
-
+    df['bairro_1'] = np.where(df['bairro_get'] == 0, df['bairro'], df['bairro_get'])
     return df
 
 # %%
